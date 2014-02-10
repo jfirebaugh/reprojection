@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+    body {
+        background: #fcfcfa;
+        width: 700px;
+        margin: auto;
+    }
+
+    .graticule {
+        fill: none;
+        stroke: #777;
+        stroke-width: .5px;
+        stroke-opacity: .5;
+    }
+
+    div {
+        display: inline-block;
+        position: relative;
+        margin: 25px;
+    }
+
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.js"></script>
+<script>
+
+    var width = 300,
+        height = 300;
+
+    var projections = [
+        d3.geo.orthographic()
+            .scale(140)
+            .translate([width / 2, height / 2])
+            .clipAngle(90)
+            .precision(.1),
+        d3.geo.stereographic()
+            .scale(140)
+            .translate([width / 2, height / 2])
+            .clipAngle(180 - 1e-4)
+            .clipExtent([[0, 0], [width, height]])
+            .precision(.1),
+        d3.geo.mercator()
+            .scale((width + 1) / 2 / Math.PI)
+            .translate([width / 2, height / 2])
+            .precision(.1),
+        d3.geo.conicEquidistant()
+            .center([0, 15])
+            .scale(60)
+            .translate([width / 2, height / 2])
+            .precision(.1)
+    ];
+
+    var path = d3.geo.path(),
+        graticule = d3.geo.graticule();
+
+    var div = d3.select("body").selectAll("div")
+        .data(projections)
+        .enter()
+        .append("div")
+        .attr("width", width)
+        .attr("height", height);
+
+    var svg = div.append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    svg.append("path")
+        .attr("class", "graticule")
+        .attr("d", function(d) {
+            return path.projection(d)(graticule());
+        });
+
+    var canvas = div.append("canvas")
+        .attr("width", width)
+        .attr("height", height);
+
+    var origin = {i: 0, x: 0, y: 0};
+
+    var drag = d3.behavior.drag()
+        .origin(function () { return origin; })
+        .on('drag', function(d, i) {
+            origin.i = i;
+            origin.x = d3.event.x;
+            origin.y = d3.event.y;
+            draw();
+        });
+
+    div.call(drag);
+
+    var image = new Image;
+    image.crossOrigin = true;
+    image.onload = draw;
+    image.src = location.hash.substr(1) || "snoopy.png";
+
+    function draw() {
+        var dx = image.width,
+            dy = image.height,
+            c = dx > dy ? (width / dx) : (width / dy);
+
+        canvas.each(function(d, i) {
+            var context = this.getContext("2d");
+            context.clearRect(0, 0, width, height);
+            context.drawImage(image, origin.x, origin.y, dx * c, dy * c);
+
+            if (i === origin.i) return;
+
+            var sourceData = context.getImageData(0, 0, width, height).data,
+                target = context.createImageData(width, height),
+                targetData = target.data;
+
+            for (var y = 0, i = -1; y < height; ++y) {
+                for (var x = 0; x < width; ++x) {
+                    var p = d.invert([x, y]),
+                        q = projections[origin.i](p),
+                        j = Math.floor(q[0]) * 4 + Math.floor(q[1]) * width * 4;
+
+                    targetData[++i] = sourceData[j];
+                    targetData[++i] = sourceData[++j];
+                    targetData[++i] = sourceData[++j];
+                    targetData[++i] = sourceData[++j];
+                }
+            }
+
+            context.clearRect(0, 0, width, height);
+            context.putImageData(target, 0, 0);
+        });
+    }
+</script>
+<script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-29668835-1', 'jfire.io');
+    ga('send', 'pageview');
+</script>
+</body>
