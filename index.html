@@ -18,7 +18,7 @@
         stroke-opacity: .5;
     }
 
-    #content div {
+    figure {
         display: inline-block;
         position: relative;
         margin: 25px;
@@ -67,17 +67,22 @@
             .precision(.1)
     ];
 
+    projections[0].caption = "Orthographic";
+    projections[1].caption = "Stereographic";
+    projections[2].caption = "Mercator";
+    projections[3].caption = "Conic Equidistant";
+
     var path = d3.geo.path(),
         graticule = d3.geo.graticule();
 
-    var div = d3.select("#content").selectAll("div")
+    var figure = d3.select("#content").selectAll("figure")
         .data(projections)
         .enter()
-        .append("div")
+        .append("figure")
         .attr("width", width)
         .attr("height", height);
 
-    var svg = div.append("svg")
+    var svg = figure.append("svg")
         .attr("width", width)
         .attr("height", height);
 
@@ -87,9 +92,12 @@
             return path.projection(d)(graticule());
         });
 
-    var canvas = div.append("canvas")
+    var canvas = figure.append("canvas")
         .attr("width", width)
         .attr("height", height);
+
+    var caption = figure.append("figcaption")
+        .text(function (d) { return d.caption; });
 
     var origin = {i: 0, x: 0, y: 0};
 
@@ -101,7 +109,7 @@
             draw();
         });
 
-    div
+    figure
         .on('mousedown', function(d, i) {
             origin.i = i;
             draw();
