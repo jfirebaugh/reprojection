@@ -96,13 +96,17 @@
     var drag = d3.behavior.drag()
         .origin(function () { return origin; })
         .on('drag', function(d, i) {
-            origin.i = i;
             origin.x = d3.event.x;
             origin.y = d3.event.y;
             draw();
         });
 
-    div.call(drag);
+    div
+        .on('mousedown', function(d, i) {
+            origin.i = i;
+            draw();
+        })
+        .call(drag);
 
     var image = new Image;
     window.onhashchange = load;
